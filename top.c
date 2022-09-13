@@ -33,23 +33,43 @@ void main(int argc, char **argv) {
 #include <dirent.h>
 #include <string.h>
 
-void main(){
+int is_int(char* s){
+	int res=0;
+	int i=0;
+	int len=strlen(s);
+	while(i<len){
+	if(s[i]>=48 && s[i]<=57){
+	res+=1;
+	i++;
+	}else{
+	return -1;
+	}
+	}
+	return res;
+}
 
-	DIR* dirp;
-	struct dirent* dp;
+int getPid(DIR* dirp,struct dirent* dp){
 	int num_proc=0;
-	
 	dirp=opendir("/proc");
 	if(dirp==NULL){
 	 printf("niente");
 	 return -1;
 	 }
 	while ((dp=readdir(dirp))!=NULL){
-		if(dp->d_name!=NULL){
+		if(dp->d_name!=NULL && is_int(dp->d_name)!=-1){
 			printf("%s\n",dp->d_name);
-			num_proc+=1;
+			num_proc+=1;	
 		}
 	}
+	return num_proc;
+}
+void main(){
+	
+	DIR* dirp;
+	struct dirent* dp;
+
+	int num_proc=0;
+	num_proc=getPid(dirp, dp);
 	printf("ci sono= %d processi\n", num_proc);
 	closedir(dirp);
 	return 0;
