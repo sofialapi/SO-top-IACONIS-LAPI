@@ -33,6 +33,7 @@ void main(int argc, char **argv) {
 #include <dirent.h>
 #include <string.h>
 
+
 int is_int(char* s){
 	int res=0;
 	int i=0;
@@ -48,29 +49,46 @@ int is_int(char* s){
 	return res;
 }
 
-int getPid(DIR* dirp,struct dirent* dp){
+int* contaProcessi(DIR* dirp,struct dirent* dp){
 	int num_proc=0;
+	int i=0;
 	dirp=opendir("/proc");
 	if(dirp==NULL){
-	 printf("niente");
 	 return -1;
 	 }
+	
 	while ((dp=readdir(dirp))!=NULL){
 		if(dp->d_name!=NULL && is_int(dp->d_name)!=-1){
-			printf("%s\n",dp->d_name);
 			num_proc+=1;	
 		}
 	}
-	return num_proc;
+
+	rewinddir(dirp);
+	
+	int* pid=(int*)malloc(num_proc*sizeof(int));
+	while ((dp=readdir(dirp))!=NULL){
+		if(dp->d_name!=NULL && is_int(dp->d_name)!=-1){
+			pid[i]=	atoi(dp->d_name);
+			i++;
+		}
+	}
+
+	return pid;
 }
 void main(){
 	
 	DIR* dirp;
 	struct dirent* dp;
 
-	int num_proc=0;
-	num_proc=getPid(dirp, dp);
-	printf("ci sono= %d processi\n", num_proc);
+	
+	int* pid=contaProcessi(dirp, dp);
+	
+	int i=0;
+	while (pid[i]!=NULL){
+		printf("processo con pid: %d\n", pid[i]);
+		i++;
+	}
+	
 	closedir(dirp);
 	return 0;
 }
