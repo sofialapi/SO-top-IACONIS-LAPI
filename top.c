@@ -49,46 +49,82 @@ int is_int(char* s){
 	return res;
 }
 
-int* contaProcessi(DIR* dirp,struct dirent* dp){
+void contaProcessi(DIR* dirp,struct dirent* dp, int* pid){
 	int num_proc=0;
 	int i=0;
 	dirp=opendir("/proc");
 	if(dirp==NULL){
-	 return -1;
+	 return;
 	 }
 	
-	while ((dp=readdir(dirp))!=NULL){
-		if(dp->d_name!=NULL && is_int(dp->d_name)!=-1){
-			num_proc+=1;	
-		}
-	}
 
-	rewinddir(dirp);
-	
-	int* pid=(int*)malloc(num_proc*sizeof(int));
 	while ((dp=readdir(dirp))!=NULL){
 		if(dp->d_name!=NULL && is_int(dp->d_name)!=-1){
+			if(i<sizeof(pid)/sizeof(int)){
+				pid=(int*)realloc(pid,sizeof(pid));
+
+			}
 			pid[i]=	atoi(dp->d_name);
+			
 			i++;
 		}
 	}
 
-	return pid;
 }
 void main(){
 	
 	DIR* dirp;
 	struct dirent* dp;
 
-	
-	int* pid=contaProcessi(dirp, dp);
-	
+	int* pid=(int*)malloc(5*sizeof(int));
+	contaProcessi(dirp, dp, pid);
+	printf("ciao\n");
+	printf("primo elem:%d\n", pid[0]);
 	int i=0;
 	while (pid[i]!=NULL){
-		printf("processo con pid: %d\n", pid[i]);
+		printf("processo con pid: %d\n", pid[i]); //SI ROMPE QUA 
 		i++;
 	}
 	
 	closedir(dirp);
-	return 0;
+	
+	return;
 }
+
+
+/*
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#define PATH "/proc"
+
+int main(void)
+{
+    FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+
+    fp = fopen(PATH, "r");
+    if (fp == NULL)
+    {
+        perror(PATH);
+        exit(EXIT_FAILURE);
+    }
+
+    while (1)
+    {
+        if (getline(&line, &len, fp) != -1)
+            printf("%s",line);
+        else
+        {
+            printf("EOF\n");
+            sleep(1);
+            clearerr(fp);
+        }
+    }
+
+    if (line)
+        free(line);
+    return(EXIT_SUCCESS);
+}*/
