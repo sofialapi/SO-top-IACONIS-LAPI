@@ -39,65 +39,74 @@ typedef struct {
 }processi;
 
 int is_int(char* s){
-	int res=0;
+	
 	int i=0;
 	int len=strlen(s);
+	if(s==NULL) return -1;
 	while(i<len){
-		if(s[i]>=48 && s[i]<=57){
-			res+=1;
+		if((s[i]>=48 && s[i]<=57)){
 			i++;
 		}else{
 			return -1;
 		}
 	}
-	return res;
+	return 1;
 }
 
-void contaProcessi(DIR* dirp,struct dirent* dp, processi* p){
+processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p){
 	int i=1;
 	dirp=opendir("/proc");
 	if(dirp==NULL){
-	 return;
+	 return NULL;
 	 }
-	 printf("ciao2\n");
+
 	while ((dp=readdir(dirp))!=NULL){
-	printf("ciao3\n");
-		if(dp->d_name!=NULL && is_int(dp->d_name)!=-1){
-			i=atoi(dp->d_name);
-			printf("ciao4\n");
-			if(i>p[0].pid-1){
-				p=(processi*)realloc(p,p[0].pid*2);
-				p[0].pid=p[0].pid*2;
-				printf("dimensione %d\n", p[0].pid);
-			}
-			printf("ciao6\n");
-			p[i].pid=atoi(dp->d_name);
-			p[i].cpu=0;
-			p[i].mem=0;
+	
+		char* curr_dir = dp->d_name;
+	
+		if(curr_dir!=NULL && is_int(curr_dir)!=-1){
+
+		i=atoi(curr_dir);
+		
+		if(i>(p[0].pid)-1){
+			p=(processi*)realloc(p,(p[0].pid*2)*sizeof(processi));
+			p[0].pid=p[0].pid*2;
+			
 		}
+	
+		p[i].pid=atoi(curr_dir);
+		p[i].cpu=0.f;
+		p[i].mem=0.f;
+		
+		}
+		
+		
 	}
-printf("*******************\n");
+return p;
+
 }
 void main(){
 	
 	DIR* dirp;
 	struct dirent* dp;
-	printf("ciao1\n");
-	processi* p=(processi*)calloc(100,sizeof(processi));
-	p[0].pid=100;
+
+	processi* p=(processi*)calloc(1000,sizeof(processi));
+	p[0].pid=1000;
+	p[0].cpu = -1;
+	p[0].mem = -1;
+	
 	printf("dimensione %d\n",p[0].pid );
-	contaProcessi(dirp, dp, p);
-	printf("ciao7\n");
-	int i=0;
-	while (i<p[0].pid){
+	
+	p=contaProcessi(dirp, dp, p);
+	
+	int i=1;
+	while(i<p[0].pid){
 		if(p[i].pid!=0){
-		printf("processo con pid: %d\n", p[i].pid); 
-		
-		}i++;
+			printf("il pid del processo è= %d\n", p[i].pid);
+		}
+		i++;
 	}
-	
-	
-	
+
 	return;
 }
 
