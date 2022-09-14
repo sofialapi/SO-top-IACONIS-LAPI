@@ -32,11 +32,11 @@ void main(int argc, char **argv) {
 #include <stdlib.h>
 #include <dirent.h>
 #include <string.h>
-struct processi{
-	int pid;
+typedef struct {
+	int pid; //nell'indice 0 c'è la dim dell'array
 	float cpu;
 	float mem;
-};
+}processi;
 
 int is_int(char* s){
 	int res=0;
@@ -53,8 +53,8 @@ int is_int(char* s){
 	return res;
 }
 
-void contaProcessi(DIR* dirp,struct dirent* dp, struct processi* p){
-	int i=0;
+void contaProcessi(DIR* dirp,struct dirent* dp, processi* p){
+	int i=1;
 	dirp=opendir("/proc");
 	if(dirp==NULL){
 	 return;
@@ -65,9 +65,10 @@ void contaProcessi(DIR* dirp,struct dirent* dp, struct processi* p){
 		if(dp->d_name!=NULL && is_int(dp->d_name)!=-1){
 			i=atoi(dp->d_name);
 			printf("ciao4\n");
-			if(i>sizeof(p)){
-				p=(struct processi*)realloc(p,sizeof(p)*2);
-				printf("ciao5\n");
+			if(i>p[0].pid-1){
+				p=(processi*)realloc(p,p[0].pid*2);
+				p[0].pid=p[0].pid*2;
+				printf("dimensione %d\n", p[0].pid);
 			}
 			printf("ciao6\n");
 			p[i].pid=atoi(dp->d_name);
@@ -82,15 +83,17 @@ void main(){
 	DIR* dirp;
 	struct dirent* dp;
 	printf("ciao1\n");
-	struct processi* p=(struct processi*)calloc(1000,sizeof(struct processi));
+	processi* p=(processi*)calloc(100,sizeof(processi));
+	p[0].pid=100;
+	printf("dimensione %d\n",p[0].pid );
 	contaProcessi(dirp, dp, p);
-printf("ciao7\n");
+	printf("ciao7\n");
 	int i=0;
-	while (i<sizeof(p)){
+	while (i<p[0].pid){
 		if(p[i].pid!=0){
 		printf("processo con pid: %d\n", p[i].pid); 
-		i++;
-		}
+		
+		}i++;
 	}
 	
 	
