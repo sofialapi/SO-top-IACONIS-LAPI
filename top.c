@@ -120,6 +120,11 @@ void prendi_valori(){
 	printf("%s %c %lu %lu %ld %ld %lu %ld %lu \n",result->name, result->stato, result->utime_ticks, result->stime_ticks,
                 result->cutime_ticks, result->cstime_ticks, result->vsize,
                 rss, result->total_time);
+    long unsigned int uptime;
+    sprintf(buf, "/proc/%s", "uptime");
+    f = fopen(buf, "r");
+    fscanf(f, "%lu",&uptime);
+    printf("uptime =%lu\n",uptime);
 }
 
 void main(){
