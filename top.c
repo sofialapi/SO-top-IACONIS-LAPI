@@ -49,6 +49,7 @@ struct pstat {
     long int cstime_ticks;
     long unsigned int vsize; // virtual memory size in bytes
     long unsigned int rss; //Resident  Set  Size in bytes
+    long unsigned int total_time;
 };
 
 
@@ -114,9 +115,11 @@ void prendi_valori(){
                 result->name, &result->stato, &result->utime_ticks, &result->stime_ticks,
                 &result->cutime_ticks, &result->cstime_ticks, &result->vsize,
                 &rss);
-	printf("%s %c %lu %lu %ld %ld %lu %ld\n",result->name, result->stato, result->utime_ticks, result->stime_ticks,
+    result->total_time=result->utime_ticks+result->stime_ticks;
+    
+	printf("%s %c %lu %lu %ld %ld %lu %ld %lu \n",result->name, result->stato, result->utime_ticks, result->stime_ticks,
                 result->cutime_ticks, result->cstime_ticks, result->vsize,
-                rss);
+                rss, result->total_time);
 }
 
 void main(){
