@@ -32,61 +32,68 @@ void main(int argc, char **argv) {
 #include <stdlib.h>
 #include <dirent.h>
 #include <string.h>
-
+struct processi{
+	int pid;
+	float cpu;
+	float mem;
+};
 
 int is_int(char* s){
 	int res=0;
 	int i=0;
 	int len=strlen(s);
 	while(i<len){
-	if(s[i]>=48 && s[i]<=57){
-	res+=1;
-	i++;
-	}else{
-	return -1;
-	}
+		if(s[i]>=48 && s[i]<=57){
+			res+=1;
+			i++;
+		}else{
+			return -1;
+		}
 	}
 	return res;
 }
 
-void contaProcessi(DIR* dirp,struct dirent* dp, int* pid){
-	int num_proc=0;
+void contaProcessi(DIR* dirp,struct dirent* dp, struct processi* p){
 	int i=0;
 	dirp=opendir("/proc");
 	if(dirp==NULL){
 	 return;
 	 }
-	
-
+	 printf("ciao2\n");
 	while ((dp=readdir(dirp))!=NULL){
+	printf("ciao3\n");
 		if(dp->d_name!=NULL && is_int(dp->d_name)!=-1){
-			if(i<sizeof(pid)/sizeof(int)){
-				pid=(int*)realloc(pid,sizeof(pid));
-
+			i=atoi(dp->d_name);
+			printf("ciao4\n");
+			if(i>sizeof(p)){
+				p=(struct processi*)realloc(p,sizeof(p)*2);
+				printf("ciao5\n");
 			}
-			pid[i]=	atoi(dp->d_name);
-			
-			i++;
+			printf("ciao6\n");
+			p[i].pid=atoi(dp->d_name);
+			p[i].cpu=0;
+			p[i].mem=0;
 		}
 	}
-
+printf("*******************\n");
 }
 void main(){
 	
 	DIR* dirp;
 	struct dirent* dp;
-
-	int* pid=(int*)malloc(5*sizeof(int));
-	contaProcessi(dirp, dp, pid);
-	printf("ciao\n");
-	printf("primo elem:%d\n", pid[0]);
+	printf("ciao1\n");
+	struct processi* p=(struct processi*)calloc(1000,sizeof(struct processi));
+	contaProcessi(dirp, dp, p);
+printf("ciao7\n");
 	int i=0;
-	while (pid[i]!=NULL){
-		printf("processo con pid: %d\n", pid[i]); //SI ROMPE QUA 
+	while (i<sizeof(p)){
+		if(p[i].pid!=0){
+		printf("processo con pid: %d\n", p[i].pid); 
 		i++;
+		}
 	}
 	
-	closedir(dirp);
+	
 	
 	return;
 }
