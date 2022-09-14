@@ -38,6 +38,22 @@ typedef struct {
 	float mem;
 }processi;
 
+
+
+struct pstat {
+	char name[100];
+	char stato;
+    long unsigned int utime_ticks;
+    long int cutime_ticks;
+    long unsigned int stime_ticks;
+    long int cstime_ticks;
+    long unsigned int vsize; // virtual memory size in bytes
+    long unsigned int rss; //Resident  Set  Size in bytes
+};
+
+
+
+
 int is_int(char* s){
 	
 	int i=0;
@@ -70,13 +86,13 @@ processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p){
 		
 		if(i>(p[0].pid)-1){
 			p=(processi*)realloc(p,(p[0].pid*2)*sizeof(processi));
-			p[0].pid=p[0].pid*2;
-			
+			p[0].pid=p[0].pid*2;			
 		}
 	
 		p[i].pid=atoi(curr_dir);
 		p[i].cpu=0.f;
 		p[i].mem=0.f;
+		
 		
 		}
 		
@@ -85,8 +101,27 @@ processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p){
 return p;
 
 }
+
+void prendi_valori(){
+	long unsigned int stat[52];
+	char buf[1000];
+    sprintf(buf, "/proc/%d/stat", 1466);
+    FILE *f = fopen(buf, "r");
+    long int rss;
+    struct pstat* result=(struct pstat*)calloc(1,sizeof(struct pstat));
+    fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
+                "%lu %ld %ld %*d %*d %*d %*d %*u %lu %ld",
+                result->name, &result->stato, &result->utime_ticks, &result->stime_ticks,
+                &result->cutime_ticks, &result->cstime_ticks, &result->vsize,
+                &rss);
+	printf("%s %c %lu %lu %ld %ld %lu %ld\n",result->name, result->stato, result->utime_ticks, result->stime_ticks,
+                result->cutime_ticks, result->cstime_ticks, result->vsize,
+                rss);
+}
+
 void main(){
 	
+	prendi_valori();
 	DIR* dirp;
 	struct dirent* dp;
 
@@ -95,16 +130,16 @@ void main(){
 	p[0].cpu = -1;
 	p[0].mem = -1;
 	
-	printf("dimensione %d\n",p[0].pid );
+
 	
 	p=contaProcessi(dirp, dp, p);
 	
-	int i=1;
+	int i=1;	
 	while(i<p[0].pid){
 		if(p[i].pid!=0){
-			printf("il pid del processo è= %d\n", p[i].pid);
+			printf("il pid del processo è= %d e l'indice è: %d\n", p[i].pid, i); //mi setta uno sbagliato, poi vedo
 		}
-		i++;
+		++i;
 	}
 
 	return;
