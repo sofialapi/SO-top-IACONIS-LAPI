@@ -108,7 +108,7 @@ processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_t
 		}
 	
 		p[i].pid=atoi(curr_dir);
-		CPUeMEM(&p[i], memoria_totale);
+		CPUeMEM(&p[i], memoria_totale, clock);
 		
 		//printf("CPU= %f\n", p[i].cpu);
         //printf("MEM =%f\n",p[i].mem);
@@ -151,7 +151,6 @@ void main(){
     int j=0;
     char c;
     while(1){
-    //problema 1: non elimina un pid se il processo muore
     //problema 1: trovare modo per terminare
 	
 	    p=contaProcessi(dirp, dp, p, memoria_totale, clock);
@@ -159,6 +158,7 @@ void main(){
 	    while(i<p[0].pid){
 		    if(p[i].pid!=0){
 			    printf("il pid del processo è= %d\n", p[i].pid); 
+			    p[i].pid=0;
 		    }
 		    ++i;
 	    }
