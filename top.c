@@ -51,7 +51,7 @@ struct pstat {
     long int cstime_ticks;
     long unsigned int vsize; // virtual memory size in bytes
     long unsigned int rss; //Resident  Set  Size in bytes
-    long unsigned int total_time;
+    long long unsigned int total_time;
     long long unsigned int starttime;
 };
 
@@ -114,7 +114,7 @@ void prendi_valori(){
     long int rss;
     struct pstat* result=(struct pstat*)calloc(1,sizeof(struct pstat));
     fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
-                "%lu %ld %ld %*d %*d %*d %*d %*u %lu %ld",
+                "%lu %ld %ld %*d %*d %*d %*d %llu %lu %ld",
                 result->name, &result->stato, &result->utime_ticks, &result->stime_ticks,
                 &result->cutime_ticks, &result->cstime_ticks, &result->starttime, &result->vsize,
                 &rss);
