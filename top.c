@@ -50,7 +50,6 @@ struct pstat {
     long unsigned int vsize; // virtual memory size in bytes
     long unsigned int rss; //Resident  Set  Size in bytes
     long unsigned int total_time;
-    long long unsigned int starttime;
 };
 
 
@@ -112,28 +111,24 @@ void prendi_valori(){
     long int rss;
     struct pstat* result=(struct pstat*)calloc(1,sizeof(struct pstat));
     fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
-                "%lu %ld %ld %*d %*d %*d %*d %llu %lu %ld",
+                "%lu %ld %ld %*d %*d %*d %*d %*u %lu %ld",
                 result->name, &result->stato, &result->utime_ticks, &result->stime_ticks,
-                &result->cutime_ticks, &result->cstime_ticks, &result->starttime, &result->vsize,
+                &result->cutime_ticks, &result->cstime_ticks, &result->vsize,
                 &rss);
     result->total_time=result->utime_ticks+result->stime_ticks;
     
-	printf("%s %c %lu %lu %ld %ld %lu %ld %lu %llu\n",result->name, result->stato, result->utime_ticks, result->stime_ticks,
+	printf("%s %c %lu %lu %ld %ld %lu %ld %lu \n",result->name, result->stato, result->utime_ticks, result->stime_ticks,
                 result->cutime_ticks, result->cstime_ticks, result->vsize,
-                rss, result->total_time, result->starttime);
-     long unsigned int uptime;
-	char buf[1000];
+                rss, result->total_time);
+    long unsigned int uptime;
     sprintf(buf, "/proc/%s", "uptime");
     f = fopen(buf, "r");
     fscanf(f, "%lu",&uptime);
-    printf("uptime =%lu\n",uptime);   
-    long long unsigned int seconds= uptime-(result->starttime/Hertz);
-        
-   
+    printf("uptime =%lu\n",uptime);
 }
 
 void main(){
-	 
+	
 	prendi_valori();
 	DIR* dirp;
 	struct dirent* dp;
