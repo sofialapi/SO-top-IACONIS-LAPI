@@ -50,7 +50,7 @@ struct pstat {
     long unsigned int stime_ticks;
     long int cstime_ticks;
     long unsigned int vsize; // virtual memory size in bytes
-    long unsigned int rss; //Resident  Set  Size in bytes
+    long int rss; //Resident  Set  Size in bytes
     long long unsigned int total_time;
     long long unsigned int starttime;
 };
@@ -109,20 +109,20 @@ return p;
 void prendi_valori(){
 	long unsigned int stat[52];
 	char buf[1000];
-    sprintf(buf, "/proc/%d/stat", 1481);
+    sprintf(buf, "/proc/%d/stat", 2578);
     FILE *f = fopen(buf, "r");
-    long int rss;
+    
     struct pstat* result=(struct pstat*)calloc(1,sizeof(struct pstat));
     fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
                 "%lu %ld %ld %*d %*d %*d %*d %llu %lu %ld",
                 result->name, &result->stato, &result->utime_ticks, &result->stime_ticks,
                 &result->cutime_ticks, &result->cstime_ticks, &result->starttime, &result->vsize,
-                &rss);
+                &result->rss);
     result->total_time=result->utime_ticks+result->stime_ticks;
     
 	printf("%s %c %lu %lu %ld %ld %lu %ld %llu %llu\n",result->name, result->stato, result->utime_ticks, result->stime_ticks,
                 result->cutime_ticks, result->cstime_ticks, result->vsize,
-                rss, result->total_time, result->starttime);
+                result->rss, result->total_time, result->starttime);
   //prendo uptime da /proc/uptime
     float uptime;
     sprintf(buf, "/proc/%s", "uptime");
@@ -133,11 +133,22 @@ void prendi_valori(){
     float clock=sysconf(_SC_CLK_TCK);
     printf("_SC_CLK_TCK =%f\n",clock);
    
-     
+     //calcolo %CPU
     float seconds= uptime-(result->starttime/clock);
     printf("seconds= %f\n",seconds);
-    float totale=100*((result->total_time/clock)/seconds);
-    printf("**********USO TOTALE*********= %f\n", totale);
+    float CPU=100*((result->total_time/clock)/seconds);
+    printf("CPU= %f\n", CPU);
+    
+    //prendo memoria totale (da mettere nel main perchè è necessario prenderlo solo una volta)
+    float memoria_totale;
+    sprintf(buf, "/proc/%s", "meminfo");
+    f = fopen(buf, "r");
+    fscanf(f, "%*s %f",&memoria_totale);
+    printf("memoria totale =%f\n",memoria_totale);
+    
+    //calcolo %MEM
+    float MEM=((result->rss*4)/memoria_totale)*100; //il *4 lo faccio staticamente, 4 è la dimensione di una pagina, l'info si trova in /proc/pid/smaps ma è enorme e devo capire come leggerlo
+     printf("MEM =%f\n",MEM);
 }
 
 void main(){
