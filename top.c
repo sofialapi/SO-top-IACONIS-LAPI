@@ -146,24 +146,26 @@ void main(){
     //prendo Hertz
     float clock=sysconf(_SC_CLK_TCK);
    
-   
     int i=1;
-    int j=0;
-    char c;
+
     while(1){
     //problema 1: trovare modo per terminare
 	
 	    p=contaProcessi(dirp, dp, p, memoria_totale, clock);
-        printf("\n***************\n");	
+	    
+		i=1;
+		
 	    while(i<p[0].pid){
-		    if(p[i].pid!=0){
-			    printf("il pid del processo è= %d\n", p[i].pid); 
-			    p[i].pid=0;
+		    
+		    if(p[i].pid!=0 && (p[i].state=='D' || p[i].state=='I' || p[i].state=='R' || p[i].state=='S' || p[i].state=='T' ||
+		    p[i].state=='t' || p[i].state=='Z')){
+			    printf("%d             %c              %f               %f\n", p[i].pid,p[i].state, p[i].cpu, p[i].mem ); 
+			    p[i].pid=0; p[i].state='\0'; p[i].cpu=0; p[i].mem=0;
 		    }
 		    ++i;
 	    }
-        i=1;
         sleep(2);
+        fflush(stdout);
     }
 	return;
 }
