@@ -44,14 +44,10 @@ typedef struct {
 
 struct pstat {
 	char name[100];
-	char stato;
-    long unsigned int utime_ticks;
-    long int cutime_ticks;
-    long unsigned int stime_ticks;
-    long int cstime_ticks;
-    long unsigned int vsize; // virtual memory size in bytes
-    long int rss; //Resident  Set  Size in bytes
-    long long unsigned int total_time;
+	char state;
+    long unsigned int utime;
+    long unsigned int stime;
+    long int rss; 
     long long unsigned int starttime;
 };
 
@@ -113,22 +109,19 @@ void prendi_valori(){
     FILE *f = fopen(buf, "r");
     
     struct pstat* result=(struct pstat*)calloc(1,sizeof(struct pstat));
-    fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
-                "%lu %ld %ld %*d %*d %*d %*d %llu %lu %ld",
-                result->name, &result->stato, &result->utime_ticks, &result->stime_ticks,
-                &result->cutime_ticks, &result->cstime_ticks, &result->starttime, &result->vsize,
-                &result->rss);
-    result->total_time=result->utime_ticks+result->stime_ticks;
+    fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %*d %*d %*d %*d %*d %*d %llu %*u %ld",
+                result->name, &result->state, &result->utime,&result->stime, &result->starttime, &result->rss);
+    long long unsigned int total_time=result->utime+result->stime;
     
-	printf("%s %c %lu %lu %ld %ld %lu %ld %llu %llu\n",result->name, result->stato, result->utime_ticks, result->stime_ticks,
-                result->cutime_ticks, result->cstime_ticks, result->vsize,
-                result->rss, result->total_time, result->starttime);
-  //prendo uptime da /proc/uptime
+	printf("%s %c %lu %lu  %ld %llu %llu\n",result->name, result->state, result->utime, result->stime,result->rss, total_time, result->starttime);
+	
+    //prendo uptime da /proc/uptime
     float uptime;
     sprintf(buf, "/proc/%s", "uptime");
     f = fopen(buf, "r");
     fscanf(f, "%f",&uptime);
     printf("uptime =%f\n",uptime);
+    
     //prendo Hertz
     float clock=sysconf(_SC_CLK_TCK);
     printf("_SC_CLK_TCK =%f\n",clock);
@@ -136,7 +129,7 @@ void prendi_valori(){
      //calcolo %CPU
     float seconds= uptime-(result->starttime/clock);
     printf("seconds= %f\n",seconds);
-    float CPU=100*((result->total_time/clock)/seconds);
+    float CPU=100*((total_time/clock)/seconds);
     printf("CPU= %f\n", CPU);
     
     //prendo memoria totale (da mettere nel main perchè è necessario prenderlo solo una volta)
@@ -147,7 +140,7 @@ void prendi_valori(){
     printf("memoria totale =%f\n",memoria_totale);
     
     //calcolo %MEM
-    float MEM=((result->rss*4)/memoria_totale)*100; //il *4 lo faccio staticamente, 4 è la dimensione di una pagina, l'info si trova in /proc/pid/smaps ma è enorme e devo capire come leggerlo
+    float MEM=((result->rss*4)/memoria_totale)*100; //il *4 lo faccio staticamente, 4 è la dimensione di una pagina, l'info si trova in /proc/pid/smaps ma è enorme e devo capire come
      printf("MEM =%f\n",MEM);
 }
 
