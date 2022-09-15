@@ -1,30 +1,3 @@
-/*
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-void main(int argc, char **argv) {
-    int pid;
-    sscanf(argv[1], "%d", &pid);
-    printf("pid = %d\n", pid);
-
-    char buf[1000];
-    sprintf(buf, "/proc/%d/stat", pid);
-    FILE *f = fopen(buf, "r");
-
-    int n;
-    char name[1000];
-    char stat;
-    int padre;
-    fscanf(f, "%d %s %c %d", &n, name, &stat, &padre);
-    printf("name = %s\n", name);
-    printf("stato= %c\n", stat);
-    printf("padre = %d\n", padre);
-    fclose(f);
-}
-*/
-
 #include <sys/types.h>
 #include <sys/dir.h>
 #include <sys/param.h>
@@ -34,6 +7,8 @@ void main(int argc, char **argv) {
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
+#include <errno.h>
+
 typedef struct {
 	int pid; //nell'indice 0 c'è la dim dell'array
 	char name[100];
@@ -45,52 +20,54 @@ typedef struct {
 
 
 struct pstat {
-	char name[100];
-	char state;
     long unsigned int utime;
     long unsigned int stime;
     long int rss; 
     long long unsigned int starttime;
 };
 
-void CPUeMEM(processi* p, float memoria_totale){
+void CPUeMEM(processi* p, float memoria_totale, float clock){
 	//apro /proc/pid/stat
 	char buf[1000];
-    sprintf(buf, "/proc/%d/stat", p->pid);
+    int ret;
+    int controllo;
+    controllo = sprintf(buf, "/proc/%d/stat", p->pid);
+    if (controllo<0)printf("ERRORE\n");
     FILE *f = fopen(buf, "r");
     
     struct pstat* result=(struct pstat*)calloc(1,sizeof(struct pstat));
     
-    fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %*d %*d %*d %*d %*d %*d %llu %*u %ld",
-                result->name, &result->state, &result->utime,&result->stime, &result->starttime, &result->rss);
-    
+    controllo = fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %*d %*d %*d %*d %*d %*d %llu %*u %ld",
+                p->name, &p->state, &result->utime, &result->stime, &result->starttime, &result->rss);
+    if(controllo<0) printf("ERRORE1\n");
+    ret=fclose(f);
+    if(ret==-1) printf("errore nella fclose\n");
     long long unsigned int total_time;
     total_time=result->utime+result->stime;
-    
-	//printf("%s %c %lu %lu  %ld %llu %llu\n",result->name, result->state, result->utime, result->stime,result->rss, total_time,
-	//result->starttime);
-	
+
     //prendo uptime da /proc/uptime
     float uptime;
-    sprintf(buf, "/proc/%s", "uptime");
+
+    controllo = sprintf(buf, "/proc/%s", "uptime");
+    if(controllo<0) printf("ERRORE2\n");
     f = fopen(buf, "r");
-    fscanf(f, "%f",&uptime);
-    //printf("uptime =%f\n",uptime);
-    
-    //prendo Hertz
-    float clock=sysconf(_SC_CLK_TCK);
-    //printf("_SC_CLK_TCK =%f\n",clock);
-   
-     //calcolo %CPU
+    if(f==NULL) printf("%s\n", strerror(errno));
+
+    controllo = fscanf(f, "%f",&uptime);
+    if(controllo<0) printf("ERRORE2\n");
+
+    ret=fclose(f);
+    if(ret==-1) printf("errore nella fclose\n");
+
     float seconds= uptime-(result->starttime/clock);
-    //printf("seconds= %f\n",seconds);
     
-    float CPU=100*((total_time/clock)/seconds);
-    printf("CPU= %f\n", CPU);
+    //calcolo %CPU
+   
+    p->cpu=100*((total_time/clock)/seconds);
     
     //calcolo %MEM
-    float MEM=((result->rss*4)/memoria_totale)*100; //il *4 lo faccio staticamente, 4 è la dimensione di una pagina, l'info si trova in /proc/pid/smaps ma è enorme e devo capire come
-     printf("MEM =%f\n",MEM);
+    p->mem=((result->rss*4)/memoria_totale)*100; //il *4 lo faccio staticamente, 4 è la dimensione di una pagina, l'info si trova in /proc/pid/smaps ma è enorme e devo capire come
+    free(result);
 }
 
 
@@ -110,7 +87,7 @@ int is_int(char* s){
 	return 1;
 }
 
-processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_totale){
+processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_totale, float clock){
 	int i=1;
 	dirp=opendir("/proc");
 	if(dirp==NULL){
@@ -131,15 +108,20 @@ processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_t
 		}
 	
 		p[i].pid=atoi(curr_dir);
-		p[i].cpu=0.f;
-		p[i].mem=0.f;
 		CPUeMEM(&p[i], memoria_totale);
 		
-		
+		//printf("CPU= %f\n", p[i].cpu);
+        //printf("MEM =%f\n",p[i].mem);
+
 		}
 		
 		
 	}
+
+rewinddir(dirp);
+int ret=closedir(dirp);
+if(ret==-1) printf("errore nella closedir\n");
+
 return p;
 
 }
@@ -153,8 +135,6 @@ void main(){
 
 	processi* p=(processi*)calloc(1000,sizeof(processi));
 	p[0].pid=1000;
-	p[0].cpu = -1;
-	p[0].mem = -1;
 	
 	char buf[1000];
 	float memoria_totale;
@@ -162,54 +142,29 @@ void main(){
     FILE* f = fopen(buf, "r");
     fscanf(f, "%*s %f",&memoria_totale);
     printf("memoria totale =%f\n",memoria_totale);
+
+    //prendo Hertz
+    float clock=sysconf(_SC_CLK_TCK);
+   
+   
+    int i=1;
+    int j=0;
+    char c;
+    while(1){
+    //problema 1: non elimina un pid se il processo muore
+    //problema 1: trovare modo per terminare
 	
-	p=contaProcessi(dirp, dp, p, memoria_totale);
-	/*
-	int i=1;	
-	while(i<p[0].pid){
-		if(p[i].pid!=0){
-			printf("il pid del processo è= %d e l'indice è: %d\n", p[i].pid, i); //mi setta uno sbagliato, poi vedo
-		}
-		++i;
-	}
-    */
+	    p=contaProcessi(dirp, dp, p, memoria_totale, clock);
+        printf("\n***************\n");	
+	    while(i<p[0].pid){
+		    if(p[i].pid!=0){
+			    printf("il pid del processo è= %d\n", p[i].pid); 
+		    }
+		    ++i;
+	    }
+        i=1;
+        sleep(2);
+    }
 	return;
 }
 
-
-/*
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#define PATH "/proc"
-
-int main(void)
-{
-    FILE * fp;
-    char * line = NULL;
-    size_t len = 0;
-
-    fp = fopen(PATH, "r");
-    if (fp == NULL)
-    {
-        perror(PATH);
-        exit(EXIT_FAILURE);
-    }
-
-    while (1)
-    {
-        if (getline(&line, &len, fp) != -1)
-            printf("%s",line);
-        else
-        {
-            printf("EOF\n");
-            sleep(1);
-            clearerr(fp);
-        }
-    }
-
-    if (line)
-        free(line);
-    return(EXIT_SUCCESS);
-}*/
