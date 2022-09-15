@@ -36,6 +36,8 @@ void main(int argc, char **argv) {
 #include <math.h>
 typedef struct {
 	int pid; //nell'indice 0 c'è la dim dell'array
+	char name[100];
+	char state;
 	float cpu;
 	float mem;
 }processi;
@@ -51,6 +53,45 @@ struct pstat {
     long long unsigned int starttime;
 };
 
+void CPUeMEM(processi* p, float memoria_totale){
+	//apro /proc/pid/stat
+	char buf[1000];
+    sprintf(buf, "/proc/%d/stat", p->pid);
+    FILE *f = fopen(buf, "r");
+    
+    struct pstat* result=(struct pstat*)calloc(1,sizeof(struct pstat));
+    
+    fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %*d %*d %*d %*d %*d %*d %llu %*u %ld",
+                result->name, &result->state, &result->utime,&result->stime, &result->starttime, &result->rss);
+    
+    long long unsigned int total_time;
+    total_time=result->utime+result->stime;
+    
+	//printf("%s %c %lu %lu  %ld %llu %llu\n",result->name, result->state, result->utime, result->stime,result->rss, total_time,
+	//result->starttime);
+	
+    //prendo uptime da /proc/uptime
+    float uptime;
+    sprintf(buf, "/proc/%s", "uptime");
+    f = fopen(buf, "r");
+    fscanf(f, "%f",&uptime);
+    //printf("uptime =%f\n",uptime);
+    
+    //prendo Hertz
+    float clock=sysconf(_SC_CLK_TCK);
+    //printf("_SC_CLK_TCK =%f\n",clock);
+   
+     //calcolo %CPU
+    float seconds= uptime-(result->starttime/clock);
+    //printf("seconds= %f\n",seconds);
+    
+    float CPU=100*((total_time/clock)/seconds);
+    printf("CPU= %f\n", CPU);
+    
+    //calcolo %MEM
+    float MEM=((result->rss*4)/memoria_totale)*100; //il *4 lo faccio staticamente, 4 è la dimensione di una pagina, l'info si trova in /proc/pid/smaps ma è enorme e devo capire come
+     printf("MEM =%f\n",MEM);
+}
 
 
 
@@ -69,7 +110,7 @@ int is_int(char* s){
 	return 1;
 }
 
-processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p){
+processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_totale){
 	int i=1;
 	dirp=opendir("/proc");
 	if(dirp==NULL){
@@ -92,6 +133,7 @@ processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p){
 		p[i].pid=atoi(curr_dir);
 		p[i].cpu=0.f;
 		p[i].mem=0.f;
+		CPUeMEM(&p[i], memoria_totale);
 		
 		
 		}
@@ -102,51 +144,10 @@ return p;
 
 }
 
-void prendi_valori(){
-	long unsigned int stat[52];
-	char buf[1000];
-    sprintf(buf, "/proc/%d/stat", 2578);
-    FILE *f = fopen(buf, "r");
-    
-    struct pstat* result=(struct pstat*)calloc(1,sizeof(struct pstat));
-    fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %*d %*d %*d %*d %*d %*d %llu %*u %ld",
-                result->name, &result->state, &result->utime,&result->stime, &result->starttime, &result->rss);
-    long long unsigned int total_time=result->utime+result->stime;
-    
-	printf("%s %c %lu %lu  %ld %llu %llu\n",result->name, result->state, result->utime, result->stime,result->rss, total_time, result->starttime);
-	
-    //prendo uptime da /proc/uptime
-    float uptime;
-    sprintf(buf, "/proc/%s", "uptime");
-    f = fopen(buf, "r");
-    fscanf(f, "%f",&uptime);
-    printf("uptime =%f\n",uptime);
-    
-    //prendo Hertz
-    float clock=sysconf(_SC_CLK_TCK);
-    printf("_SC_CLK_TCK =%f\n",clock);
-   
-     //calcolo %CPU
-    float seconds= uptime-(result->starttime/clock);
-    printf("seconds= %f\n",seconds);
-    float CPU=100*((total_time/clock)/seconds);
-    printf("CPU= %f\n", CPU);
-    
-    //prendo memoria totale (da mettere nel main perchè è necessario prenderlo solo una volta)
-    float memoria_totale;
-    sprintf(buf, "/proc/%s", "meminfo");
-    f = fopen(buf, "r");
-    fscanf(f, "%*s %f",&memoria_totale);
-    printf("memoria totale =%f\n",memoria_totale);
-    
-    //calcolo %MEM
-    float MEM=((result->rss*4)/memoria_totale)*100; //il *4 lo faccio staticamente, 4 è la dimensione di una pagina, l'info si trova in /proc/pid/smaps ma è enorme e devo capire come
-     printf("MEM =%f\n",MEM);
-}
 
 void main(){
 	
-	prendi_valori();
+	
 	DIR* dirp;
 	struct dirent* dp;
 
@@ -155,9 +156,14 @@ void main(){
 	p[0].cpu = -1;
 	p[0].mem = -1;
 	
-
+	char buf[1000];
+	float memoria_totale;
+    sprintf(buf, "/proc/%s", "meminfo");
+    FILE* f = fopen(buf, "r");
+    fscanf(f, "%*s %f",&memoria_totale);
+    printf("memoria totale =%f\n",memoria_totale);
 	
-	p=contaProcessi(dirp, dp, p);
+	p=contaProcessi(dirp, dp, p, memoria_totale);
 	/*
 	int i=1;	
 	while(i<p[0].pid){
