@@ -32,6 +32,8 @@ void main(int argc, char **argv) {
 #include <stdlib.h>
 #include <dirent.h>
 #include <string.h>
+#include <unistd.h>
+#include <math.h>
 typedef struct {
 	int pid; //nell'indice 0 c'è la dim dell'array
 	float cpu;
@@ -50,6 +52,7 @@ struct pstat {
     long unsigned int vsize; // virtual memory size in bytes
     long unsigned int rss; //Resident  Set  Size in bytes
     long unsigned int total_time;
+    long long unsigned int starttime;
 };
 
 
@@ -106,25 +109,35 @@ return p;
 void prendi_valori(){
 	long unsigned int stat[52];
 	char buf[1000];
-    sprintf(buf, "/proc/%d/stat", 1466);
+    sprintf(buf, "/proc/%d/stat", 1481);
     FILE *f = fopen(buf, "r");
     long int rss;
     struct pstat* result=(struct pstat*)calloc(1,sizeof(struct pstat));
     fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
                 "%lu %ld %ld %*d %*d %*d %*d %*u %lu %ld",
                 result->name, &result->stato, &result->utime_ticks, &result->stime_ticks,
-                &result->cutime_ticks, &result->cstime_ticks, &result->vsize,
+                &result->cutime_ticks, &result->cstime_ticks, &result->starttime, &result->vsize,
                 &rss);
     result->total_time=result->utime_ticks+result->stime_ticks;
     
-	printf("%s %c %lu %lu %ld %ld %lu %ld %lu \n",result->name, result->stato, result->utime_ticks, result->stime_ticks,
+	printf("%s %c %lu %lu %ld %ld %lu %ld %llu %llu\n",result->name, result->stato, result->utime_ticks, result->stime_ticks,
                 result->cutime_ticks, result->cstime_ticks, result->vsize,
-                rss, result->total_time);
-    long unsigned int uptime;
+                rss, result->total_time, result->starttime);
+  //prendo uptime da /proc/uptime
+    float uptime;
     sprintf(buf, "/proc/%s", "uptime");
     f = fopen(buf, "r");
-    fscanf(f, "%lu",&uptime);
-    printf("uptime =%lu\n",uptime);
+    fscanf(f, "%f",&uptime);
+    printf("uptime =%f\n",uptime);
+    //prendo Hertz
+    float clock=sysconf(_SC_CLK_TCK);
+    printf("_SC_CLK_TCK =%f\n",clock);
+   
+     
+    float seconds= uptime-(result->starttime/clock);
+    printf("seconds= %f\n",seconds);
+    float totale=100*((result->total_time/clock)/seconds);
+    printf("**********USO TOTALE*********= %f\n", totale);
 }
 
 void main(){
@@ -141,7 +154,7 @@ void main(){
 
 	
 	p=contaProcessi(dirp, dp, p);
-	
+	/*
 	int i=1;	
 	while(i<p[0].pid){
 		if(p[i].pid!=0){
@@ -149,7 +162,7 @@ void main(){
 		}
 		++i;
 	}
-
+    */
 	return;
 }
 
