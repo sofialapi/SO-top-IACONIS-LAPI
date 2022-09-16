@@ -129,16 +129,8 @@ return p;
 
 
 void main(){
-/*
-	fd_set readfs;
-	int fd_stdin;
-	fd_stdin=fileno(stdin);
-	*/
-	
-	
-	
-	
-	
+	char input;
+    int pid;
 	char buf[1000];
 	float memoria_totale;
 	float clock;
@@ -164,8 +156,6 @@ void main(){
 	
 	    p=contaProcessi(dirp, dp, p, memoria_totale, clock);
 	    
-        
-        char input;
 		input=getc(stdin);
 		
 		switch(input){
@@ -173,23 +163,28 @@ void main(){
 				printf("exit\n");
 				return;
 			case 'k':
-				printf("A quale pid vuoi mandare la kill?\n");
+				printf("Invio SIGKILL a:\n");
+				fscanf(stdin, "%d", &pid);
+				kill(pid, SIGKILL);
 				break;
 			case 't':
-				printf("A quale pid vuoi mandare la termate?\n");
+				printf("Invio SIGTERM a:\n");
+				fscanf(stdin, "%d", &pid);
+				kill(pid, SIGTERM);
 				break;
 			case 's':
-				printf("A quale pid vuoi mandare la suspend?\n");
+				printf("Invio SIGSTOP a:\n");
+				fscanf(stdin, "%d", &pid);
+				kill(pid, SIGTSTP);
 				break;
 			case 'r':
-				printf("A quale pid vuoi mandare la resume?\n");
+				printf("Invio SIGCONT a:\n");
+				fscanf(stdin, "%d", &pid);
+				kill(pid, SIGCONT);//non funziona non so perchè
 				break;
 			default:
 				break;	
 		}
-
-		fflush(stdin);
-		fflush(stdout);
 
         sleep(3);
     }
