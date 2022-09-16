@@ -23,7 +23,7 @@ typedef struct {
 
 
 
-void CPUeMEM(processi* p, float memoria_totale, float clock){
+void calcolo_uso_memoria(processi* p, float memoria_totale, float clock, int page_size){
 	
 	char buf[1000];
     long unsigned int utime;
@@ -44,7 +44,8 @@ void CPUeMEM(processi* p, float memoria_totale, float clock){
     fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %ld %ld %*d %*d %*d %*d %llu %*u %ld",
                 p->name, &p->state, &utime, &stime, &cutime, &cstime, &starttime, &rss);
 
-    fclose(f);   
+    fclose(f); 
+      
     utime=utime/clock;
     stime=stime/clock;
     cutime=cutime/clock;
@@ -56,6 +57,7 @@ void CPUeMEM(processi* p, float memoria_totale, float clock){
     f = fopen(buf, "r");
     fscanf(f, "%f",&uptime);
     fclose(f);
+    
     starttime=starttime/clock;
     seconds= uptime-(starttime);
     
@@ -70,7 +72,6 @@ void CPUeMEM(processi* p, float memoria_totale, float clock){
 
 
 int is_int(char* s){
-	
 	int i=0;
 	int len=strlen(s);
 	if(s==NULL) return -1;
@@ -84,7 +85,7 @@ int is_int(char* s){
 	return 1;
 }
 
-processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_totale, float clock){
+processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_totale, float clock, int page_size){
 	int i=1;
 	dirp=opendir("/proc");
 	if(dirp==NULL){
@@ -105,12 +106,13 @@ processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_t
 		}
 	
 		p[i].pid=atoi(curr_dir);
-		CPUeMEM(&p[i], memoria_totale, clock);
+		calcolo_uso_memoria(&p[i], memoria_totale, clock, page_size);
 		
 		if(p[i].pid!=0 && (p[i].state=='D' || p[i].state=='I' || p[i].state=='R' || p[i].state=='S' || p[i].state=='T' ||
 		    p[i].state=='t' || p[i].state=='Z')){
-			    printf("%d             %c              %.2f               %.2f\n", p[i].pid, p[i].state, p[i].cpu, p[i].mem); 
-			    p[i].pid=0; p[i].state='\0'; p[i].cpu=0; p[i].mem=0;
+			    printf("%d             %c              %.2f               %.2f          %s\n", p[i].pid, p[i].state, p[i].cpu,
+			    p[i].mem, p[i].name); 
+			    p[i].pid=0; p[i].state='\0'; p[i].cpu=0; p[i].mem=0; 
 		    }
 		
 
@@ -134,9 +136,10 @@ void main(){
 	char buf[1000];
 	float memoria_totale;
 	float clock;
+	int page_size;
+	int i=1;
 	DIR* dirp;
 	struct dirent* dp;
-	int i=1;
 	
 	processi* p=(processi*)calloc(1000,sizeof(processi));
 	p[0].pid=1000;
@@ -145,16 +148,17 @@ void main(){
     sprintf(buf, "/proc/%s", "meminfo");
     FILE* f = fopen(buf, "r");
     fscanf(f, "%*s %f",&memoria_totale);
-    printf("memoria totale =%f\n",memoria_totale);
     fclose(f);
     
     //prendo Hertz
     clock=sysconf(_SC_CLK_TCK);
+    page_size=sysconf(_SC_PAGESIZE);
+   
    
     printf("PID           S              CPU                 MEM\n");
     while(1){
 	
-	    p=contaProcessi(dirp, dp, p, memoria_totale, clock);
+	    p=contaProcessi(dirp, dp, p, memoria_totale, clock, page_size);
 	    
 		input=getc(stdin);
 		
@@ -175,12 +179,12 @@ void main(){
 			case 's':
 				printf("Invio SIGSTOP a:\n");
 				fscanf(stdin, "%d", &pid);
-				kill(pid, SIGTSTP);
+				kill(pid, SIGSTOP);
 				break;
 			case 'r':
 				printf("Invio SIGCONT a:\n");
 				fscanf(stdin, "%d", &pid);
-				kill(pid, SIGCONT);//non funziona non so perchè
+				kill(pid, SIGCONT);
 				break;
 			default:
 				break;	
