@@ -19,55 +19,49 @@ typedef struct {
 
 
 
-struct pstat {
+
+void CPUeMEM(processi* p, float memoria_totale, float clock){
+	
+	char buf[1000];
     long unsigned int utime;
     long unsigned int stime;
     long int rss; 
     long long unsigned int starttime;
-};
-
-void CPUeMEM(processi* p, float memoria_totale, float clock){
-	//apro /proc/pid/stat
-	char buf[1000];
-    int ret;
-    int controllo;
-    controllo = sprintf(buf, "/proc/%d/stat", p->pid);
-    if (controllo<0)printf("ERRORE\n");
+    long long unsigned int total_time;
+    float uptime;
+    float seconds;
+    long int cutime;
+    long int cstime;
+    
+    
+    //apro /proc/pid/stat
+    sprintf(buf, "/proc/%d/stat", p->pid);
     FILE *f = fopen(buf, "r");
     
-    struct pstat* result=(struct pstat*)calloc(1,sizeof(struct pstat));
-    
-    controllo = fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %*d %*d %*d %*d %*d %*d %llu %*u %ld",
-                p->name, &p->state, &result->utime, &result->stime, &result->starttime, &result->rss);
-    if(controllo<0) printf("ERRORE1\n");
-    ret=fclose(f);
-    if(ret==-1) printf("errore nella fclose\n");
-    long long unsigned int total_time;
-    total_time=result->utime+result->stime;
+    fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %ld %ld %*d %*d %*d %*d %llu %*u %ld",
+                p->name, &p->state, &utime, &stime, &cutime, &cstime, &starttime, &rss);
+
+    fclose(f);   
+    utime=utime/clock;
+    stime=stime/clock;
+    cutime=cutime/clock;
+    cstime=cstime/clock;
+    total_time=utime+stime+cutime+cstime;
 
     //prendo uptime da /proc/uptime
-    float uptime;
-
-    controllo = sprintf(buf, "/proc/%s", "uptime");
-    if(controllo<0) printf("ERRORE2\n");
+    sprintf(buf, "/proc/%s", "uptime");  
     f = fopen(buf, "r");
-    if(f==NULL) printf("%s\n", strerror(errno));
-
-    controllo = fscanf(f, "%f",&uptime);
-    if(controllo<0) printf("ERRORE2\n");
-
-    ret=fclose(f);
-    if(ret==-1) printf("errore nella fclose\n");
-
-    float seconds= uptime-(result->starttime/clock);
+    fscanf(f, "%f",&uptime);
+    fclose(f);
+    starttime=starttime/clock;
+    seconds= uptime-(starttime);
     
     //calcolo %CPU
-   
-    p->cpu=100*((total_time/clock)/seconds);
+    p->cpu=((100*total_time)/seconds);
     
     //calcolo %MEM
-    p->mem=((result->rss*4)/memoria_totale)*100; //il *4 lo faccio staticamente, 4 è la dimensione di una pagina, l'info si trova in /proc/pid/smaps ma è enorme e devo capire come
-    free(result);
+    p->mem=((rss*4)/memoria_totale)*100; //il *4 lo faccio staticamente, 4 è la dimensione di una pagina, l'info si trova in /proc/pid/smaps ma è enorme e devo capire come
+    
 }
 
 
@@ -110,8 +104,13 @@ processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_t
 		p[i].pid=atoi(curr_dir);
 		CPUeMEM(&p[i], memoria_totale, clock);
 		
-		//printf("CPU= %f\n", p[i].cpu);
-        //printf("MEM =%f\n",p[i].mem);
+		if(p[i].pid!=0 && (p[i].state=='D' || p[i].state=='I' || p[i].state=='R' || p[i].state=='S' || p[i].state=='T' ||
+		    p[i].state=='t' || p[i].state=='Z')){
+			    printf("%d             %c              %.2f               %.2f\n", p[i].pid, p[i].state, p[i].cpu, p[i].mem); 
+			    p[i].pid=0; p[i].state='\0'; p[i].cpu=0; p[i].mem=0;
+		    }
+		
+		
 
 		}
 		
@@ -119,8 +118,8 @@ processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_t
 	}
 
 rewinddir(dirp);
-int ret=closedir(dirp);
-if(ret==-1) printf("errore nella closedir\n");
+closedir(dirp);
+
 
 return p;
 
@@ -129,41 +128,33 @@ return p;
 
 void main(){
 	
-	
+	char buf[1000];
+	float memoria_totale;
+	float clock;
 	DIR* dirp;
 	struct dirent* dp;
-
+	int i=1;
+	
 	processi* p=(processi*)calloc(1000,sizeof(processi));
 	p[0].pid=1000;
 	
-	char buf[1000];
-	float memoria_totale;
+	
     sprintf(buf, "/proc/%s", "meminfo");
     FILE* f = fopen(buf, "r");
     fscanf(f, "%*s %f",&memoria_totale);
     printf("memoria totale =%f\n",memoria_totale);
-
+    fclose(f);
+    
     //prendo Hertz
-    float clock=sysconf(_SC_CLK_TCK);
+    clock=sysconf(_SC_CLK_TCK);
    
-    int i=1;
+    
 
     while(1){
     //problema 1: trovare modo per terminare
 	
 	    p=contaProcessi(dirp, dp, p, memoria_totale, clock);
 	    
-		i=1;
-		
-	    while(i<p[0].pid){
-		    
-		    if(p[i].pid!=0 && (p[i].state=='D' || p[i].state=='I' || p[i].state=='R' || p[i].state=='S' || p[i].state=='T' ||
-		    p[i].state=='t' || p[i].state=='Z')){
-			    printf("%d             %c              %f               %f\n", p[i].pid,p[i].state, p[i].cpu, p[i].mem ); 
-			    p[i].pid=0; p[i].state='\0'; p[i].cpu=0; p[i].mem=0;
-		    }
-		    ++i;
-	    }
         sleep(2);
         fflush(stdout);
     }
