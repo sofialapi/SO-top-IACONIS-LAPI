@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <sys/select.h>
 #include <sys/dir.h>
 #include <sys/param.h>
 #include <stdio.h>
@@ -8,6 +9,8 @@
 #include <unistd.h>
 #include <math.h>
 #include <errno.h>
+#include <signal.h>
+
 
 typedef struct {
 	int pid; //nell'indice 0 c'è la dim dell'array
@@ -110,7 +113,6 @@ processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_t
 			    p[i].pid=0; p[i].state='\0'; p[i].cpu=0; p[i].mem=0;
 		    }
 		
-		
 
 		}
 		
@@ -127,6 +129,15 @@ return p;
 
 
 void main(){
+/*
+	fd_set readfs;
+	int fd_stdin;
+	fd_stdin=fileno(stdin);
+	*/
+	
+	
+	
+	
 	
 	char buf[1000];
 	float memoria_totale;
@@ -148,15 +159,39 @@ void main(){
     //prendo Hertz
     clock=sysconf(_SC_CLK_TCK);
    
-    
-
+    printf("PID           S              CPU                 MEM\n");
     while(1){
-    //problema 1: trovare modo per terminare
 	
 	    p=contaProcessi(dirp, dp, p, memoria_totale, clock);
 	    
-        sleep(2);
-        fflush(stdout);
+        
+        char input;
+		input=getc(stdin);
+		
+		switch(input){
+			case 'q':
+				printf("exit\n");
+				return;
+			case 'k':
+				printf("A quale pid vuoi mandare la kill?\n");
+				break;
+			case 't':
+				printf("A quale pid vuoi mandare la termate?\n");
+				break;
+			case 's':
+				printf("A quale pid vuoi mandare la suspend?\n");
+				break;
+			case 'r':
+				printf("A quale pid vuoi mandare la resume?\n");
+				break;
+			default:
+				break;	
+		}
+
+		fflush(stdin);
+		fflush(stdout);
+
+        sleep(3);
     }
 	return;
 }
