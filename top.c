@@ -10,15 +10,7 @@
 #include <math.h>
 #include <errno.h>
 #include <signal.h>
-
-
-typedef struct {
-	int pid; //nell'indice 0 c'è la dim dell'array
-	char name[100];
-	char state;
-	float cpu;
-	float mem;
-}processi;
+#include "top.h"
 
 
 
