@@ -11,8 +11,8 @@
 #include <errno.h>
 #include <signal.h>
 #include "top.h"
-
-
+#include <termios.h>
+#include <sys/poll.h>
 
 
 void calcolo_uso_memoria(processi* p, float memoria_totale, float clock, int page_size){
@@ -144,7 +144,15 @@ return p;
 
 }
 
-
+void set_term_quiet_input(){
+	  struct termios tc;
+	  tcgetattr(0, &tc);
+	  tc.c_lflag &= ~(ICANON | ECHO);
+	  tc.c_cc[VMIN] = 0;
+	  tc.c_cc[VTIME] = 0;
+	  tcsetattr(0, TCSANOW, &tc);
+	}
+	
 void main(){
 	char input;
     int pid;
@@ -155,6 +163,9 @@ void main(){
 	int i=1;
 	DIR* dirp;
 	struct dirent* dp;
+	
+	struct pollfd pfd = { .fd = 0, .events = POLLIN };
+  	set_term_quiet_input();
 	
 	char* output=(char*)calloc(128000,1);
 	
@@ -180,7 +191,14 @@ void main(){
     	printf("PID           S              CPU                    MEM            COMMAND\n");
 	    p=contaProcessi(dirp, dp, p, memoria_totale, clock, page_size);
 	    stampa_processi(p, output);
-		input=getc(stdin);
+	    
+	    if (poll(&pfd, 1, 0)>0) {
+      int c = getchar();
+      printf("Key pressed: %c \n", c);
+      if (c=='q') return;
+    }
+		/*
+		input=getchar();
 		
 		switch(input){
 			case 'q':
@@ -209,6 +227,7 @@ void main(){
 			default:
 				break;	
 		}
+		*/
 
         sleep(2);
     }
