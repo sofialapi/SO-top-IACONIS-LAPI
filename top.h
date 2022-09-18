@@ -21,8 +21,6 @@ typedef struct{
     long long unsigned int total_time;
     float uptime;
     float seconds;
-    long int cutime;
-    long int cstime;
 }utilities;
 
 typedef struct {

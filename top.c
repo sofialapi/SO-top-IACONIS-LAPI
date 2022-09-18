@@ -9,12 +9,12 @@ void calcolo_uso_memoria(processi* p, float memoria_totale, float clock, int pag
     sprintf(buf, "/proc/%d/stat", p->pid);
     FILE *f = fopen(buf, "r");
     
-    fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %ld %ld %*d %*d %*d %*d %llu %*u %ld",
-                p->name, &p->state, &uti->utime, &uti->stime, &uti->cutime, &uti->cstime, &uti->starttime, &uti->rss);
+    fscanf(f, "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %*d %*d %*d %*d %*d %*d %llu %*u %ld",
+                p->name, &p->state, &uti->utime, &uti->stime, &uti->starttime, &uti->rss);
 
     fclose(f); 
 
-    uti->total_time=uti->utime+uti->stime+uti->cutime+uti->cstime;
+    uti->total_time=uti->utime+uti->stime;
 
     sprintf(buf, "/proc/%s", "uptime");  
     f = fopen(buf, "r");
@@ -63,24 +63,26 @@ processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_t
 	if(dirp==NULL){
 	 return NULL;
 	 }
-
+	 
+	 int j=1;
 	while ((dp=readdir(dirp))!=NULL){
 	
 		char* curr_dir = dp->d_name;
 	
 		if(curr_dir!=NULL && is_int(curr_dir)!=-1){
 
-			i=atoi(curr_dir);
+			//i=atoi(curr_dir);
 		
-			if(i>(p[0].pid)-1){
+			if(j>(p[0].pid)-1){
 				p=(processi*)realloc(p,(p[0].pid*2)*sizeof(processi));
 				p[0].pid=p[0].pid*2;			
 			}
 	
-			p[i].pid=atoi(curr_dir);
-			p[i].flag=1;
-			calcolo_uso_memoria(&p[i], memoria_totale, clock, page_size);
+			p[j].pid=atoi(curr_dir);
+			p[j].flag=1;
+			calcolo_uso_memoria(&p[j], memoria_totale, clock, page_size);
 		}
+		j++;
 	}
 	rewinddir(dirp);
 	closedir(dirp);
@@ -129,7 +131,7 @@ void main(){
     	
 	    p=contaProcessi(dirp, dp, p, memoria_totale, clock, page_size);
 	    stampa_processi(p, output);
-	    
+
 	    if (poll(&pfd, 1, 0)>0) {
       	int c = getchar();
 		printf("Key pressed: %c \n", c);
