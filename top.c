@@ -28,7 +28,6 @@ void calcolo_uso_memoria(processi* p, float memoria_totale, float clock, int pag
     long int cutime;
     long int cstime;
     
-    
     //apro /proc/pid/stat
     sprintf(buf, "/proc/%d/stat", p->pid);
     FILE *f = fopen(buf, "r");
@@ -56,8 +55,10 @@ void calcolo_uso_memoria(processi* p, float memoria_totale, float clock, int pag
     //calcolo %CPU
     p->cpu=((100*total_time)/seconds);
     
+    
     //calcolo %MEM
     p->mem=((rss*4)/memoria_totale)*100; //il *4 lo faccio staticamente, 4 è la dimensione di una pagina, l'info si trova in /proc/pid/smaps ma è enorme e devo capire come
+    
     
 }
 
@@ -77,6 +78,34 @@ int is_int(char* s){
 	return 1;
 }
 
+void stampa_processi(processi* p, char* output){
+	int i=1;
+	output=strncpy(output,"",128000);
+	while(i<p[0].pid){
+	if(p[i].pid!=0 && p[i].flag!=0){
+		sprintf(output+strlen(output),"%d             %c              %f               %f          %s     \n", p[i].pid, p[i].state,
+			 p[i].cpu, p[i].mem, p[i].name);
+		}
+		p[i].flag=0;
+		i++;
+	}
+	printf("%s\n",output);
+	
+	/*
+	while(i<p[0].pid){
+	
+		if(p[i].pid!=0 && p[i].flag==1){
+			 printf("%d             %c              %f               %f          %s     \n", p[i].pid, p[i].state,
+			 p[i].cpu, p[i].mem, p[i].name); 
+			 p[i].flag=1;
+		}
+		i++;
+	}
+	*/
+	
+		
+}
+
 processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_totale, float clock, int page_size){
 	int i=1;
 	dirp=opendir("/proc");
@@ -90,22 +119,16 @@ processi* contaProcessi(DIR* dirp,struct dirent* dp, processi* p,float memoria_t
 	
 		if(curr_dir!=NULL && is_int(curr_dir)!=-1){
 
-		i=atoi(curr_dir);
+			i=atoi(curr_dir);
 		
-		if(i>(p[0].pid)-1){
-			p=(processi*)realloc(p,(p[0].pid*2)*sizeof(processi));
-			p[0].pid=p[0].pid*2;			
-		}
+			if(i>(p[0].pid)-1){
+				p=(processi*)realloc(p,(p[0].pid*2)*sizeof(processi));
+				p[0].pid=p[0].pid*2;			
+			}
 	
-		p[i].pid=atoi(curr_dir);
-		calcolo_uso_memoria(&p[i], memoria_totale, clock, page_size);
-		
-		if(p[i].pid!=0 && (p[i].state=='D' || p[i].state=='I' || p[i].state=='R' || p[i].state=='S' || p[i].state=='T' ||
-		    p[i].state=='t' || p[i].state=='Z')){
-			    printf("%d             %c              %.2f               %.2f          %s\n", p[i].pid, p[i].state, p[i].cpu,
-			    p[i].mem, p[i].name); 
-			    p[i].pid=0; p[i].state='\0'; p[i].cpu=0; p[i].mem=0; 
-		    }
+			p[i].pid=atoi(curr_dir);
+			p[i].flag=1;
+			calcolo_uso_memoria(&p[i], memoria_totale, clock, page_size);
 		
 
 		}
@@ -133,6 +156,8 @@ void main(){
 	DIR* dirp;
 	struct dirent* dp;
 	
+	char* output=(char*)calloc(128000,1);
+	
 	processi* p=(processi*)calloc(1000,sizeof(processi));
 	p[0].pid=1000;
 	
@@ -147,11 +172,14 @@ void main(){
     page_size=sysconf(_SC_PAGESIZE);
    
    
-    printf("PID           S              CPU                 MEM\n");
+    
     while(1){
-	
+    	//printf("\033[H\033[J");
+    	system("clear");
+    	
+    	printf("PID           S              CPU                    MEM            COMMAND\n");
 	    p=contaProcessi(dirp, dp, p, memoria_totale, clock, page_size);
-	    
+	    stampa_processi(p, output);
 		input=getc(stdin);
 		
 		switch(input){
@@ -182,7 +210,7 @@ void main(){
 				break;	
 		}
 
-        sleep(3);
+        sleep(2);
     }
 	return;
 }
