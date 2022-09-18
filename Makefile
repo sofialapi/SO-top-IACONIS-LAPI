@@ -1,29 +1,28 @@
 Cc=gcc
-CCOPTS=--std=gnu99 
-Ar=ar
+CCOPTS=--std=gnu99 -g -Wall 
+
+
 
 HEADERS=top.h
 
-OBJS=top.o\
+OBJS=top_func.c
 
-LIBS=libtop.a
+LIBS=
 
-BINS=top_test
+BINS=top
+
 		
 .phony: clean all
 
-all: $(LIBS) $(BINS)
+all: $(BINS) $(LIBS)
 
 %.o: %.c $(HEADERS)
 	$(CC) $(CCOPTS) -c -o $@ $<
-	
-libtop.a: $(OBJS) $(HEADERS)
-			$(AR) -rcs $@ $^
-			$(RM) $(OBJS)
+
 		
-top_test: 	top.c $(LIBS)
+top: 	top.c $(OBJS)
 		$(CC) $(CCOPTS) -o $@ $^
-		
+				
 
 clean:
 	rm -rf *.o *~ $(LIBS) $(BINS)
