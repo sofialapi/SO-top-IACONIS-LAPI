@@ -26,7 +26,9 @@ void calcolo_uso_memoria(processi* p, float memoria_totale, float clock, int pag
 
     p->cpu=((100*uti->total_time/clock)/uti->seconds);
 
-    p->mem=((uti->rss*page_size)/memoria_totale)*100;     
+    p->mem=((uti->rss*page_size)/memoria_totale)*100;  
+    
+    free(uti);   
 }
 
 int is_int(char* s){

@@ -32,7 +32,7 @@ int main(){
     while(1){
     	
     	system("clear");
-    	printf("PID           S              CPU                    MEM            COMMAND\n");
+    	printf("PID           S              CPU                    MEM               COMMAND\n");
 	    p=contaProcessi(dirp, dp, p, memoria_totale, clock, page_size);
 	    stampa_processi(p, output);
 
